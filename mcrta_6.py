@@ -181,6 +181,11 @@ def plot_rt(positions : list, scatt : list ):
     ax.set_zlabel("z axis")
 
     fig.suptitle("Radiative transfer")
+    fig.savefig("Radiative_transfer")
+    rt_plot = Image.open("Radiative_transfer.png")
+    rt_plot.show()
+
+    
 
 def plot_tele(tm : list):
     ind_diff_0 = [i for i in range(nbr_photon) if len(tm[i][0]) != 0]
@@ -196,6 +201,9 @@ def plot_tele(tm : list):
     ax_maps.set_ylabel("z axis")
 
     fig_maps.suptitle("Telescope")
+    fig_maps.savefig("Telescope")
+    tele_plot = Image.open("Telescope.png")
+    tele_plot.show()   
 
 def plot_all(positions : list, scatt : list, tm : list):
     plot_rt(positions, scatt)
