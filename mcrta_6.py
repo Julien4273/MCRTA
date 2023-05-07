@@ -8,10 +8,22 @@ Created on Tue Apr  4 10:51:46 2023
 
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import random as rd
 from prettytable import PrettyTable
 import gc
+
+
+#%% Parameters user can change
+
+nbr_photon = 10
+P_abs = 0.01
+P_comp = 0.5
+
+geo = "cell"
+#geo = "layer"
+
+#n= 10**6       # Default density
 
 
 
@@ -21,23 +33,31 @@ markers = ["." , "," , "o" , "v" , "^" , "<", ">", "*"]
 colors = ['r','g','b','c','m', 'y', 'k', 'o']
 
 x_lim, y_lim, z_lim = 5, 5, 5
+
+dx, dy, dz = 0.01, 0.01, 0.01     # Steps
+
 r_0 = 10**-3                    # Radius of scaterers
 #n = (10**5*r_0)**-3             # Low density
 n = (10**2*r_0)**-3            # Medium density
 #n = (2*r_0)**-3                # High density
-
-dx, dy, dz = 0.01, 0.01, 0.01     # Steps
 
 sig = 4 * np.pi * r_0           # Cross section
 
 nc = 100                        # Number of cells
 nl = 100                        # Number of layers
 
-nbr_photon = 10
 
-field_names = ["Photon", "Interactions", "Compton", "Rayleigh", "Absorbed", "Mean dist trav", "wl_i", "wl_f"]
-photon_table = PrettyTable(field_names)
+# Tables to sum up experiment
 
+field_names_0 = ["Photon", "Interactions", "Compton", "Rayleigh", "Absorbed", "Mean dist trav", "wl_i", "wl_f"]
+photon_table = PrettyTable(field_names_0)
+
+field_names_av = ["av interactions", "av Compton", "av Rayleigh", "Absorbed", "av dist trav"]
+av_table = PrettyTable(field_names_av)
+av_table.title = "Sum up"
+
+
+# Helper functions
 
 def choose_cell(x_pos : float, y_pos : float, z_pos : float, nbr_cell : int):
     
@@ -210,6 +230,22 @@ def plot_all(positions : list, scatt : list, tm : list):
     plot_tele(tm)
     
 
+def average_quantities(R : list):
+    av_int, av_comp, av_ray, nbr_abs, av_dist = 0, 0, 0, 0, 0
+    for x in R:
+        av_int += x[1]
+        av_comp += x[2]
+        av_ray += x[3]
+        if x[4] == "yes":
+            nbr_abs += 1
+        av_dist += float(x[5])
+    return [int(av_int/nbr_photon), int(av_comp/nbr_photon), int(av_ray/nbr_photon), nbr_abs, '{:.2f}'.format(av_dist/nbr_photon)]
+
+
+
+
+
+
 
 #%% Definition of the photon class
 
@@ -241,7 +277,7 @@ class photon:
         
     
 
-    # Define whether the photon is absorbed, scattered by Raygleigh or Compton
+    # Define whether the photon is absorbed or scattered by Raygleigh/Compton
     # If not absorbed : True, otherwise : False
     def absornot(self, p_abs : float, p_comp : float):
         
@@ -252,10 +288,8 @@ class photon:
         # Random probability
         rdn = rd.random()
         
-
-        
         if (rdn <= p_abs):
-            """print("photon "+str(self.ref)+" : absorbed")"""
+            
             return False, 0
         
         elif (rdn <= p_comp) :
@@ -269,11 +303,8 @@ class photon:
             self.ndx = np.sin(theta) * np.cos(phi) * dx
             self.ndy = np.sin(theta) * np.sin(phi) * dy
             self.ndz = np.cos(theta) * dz
-            
-            """print("photon "+str(self.ref)+" : Compton")"""
+
             return True, 1
-        
-        """print("photon "+str(self.ref)+" : Rayleigh")"""
         
         # New direction
         self.ndx = np.sin(theta) * np.cos(phi) * dx
@@ -288,8 +319,7 @@ class photon:
     def in_medium(self):
         
         if self.x > x_lim or self.x < 0 or self.y > y_lim or self.y < 0 or self.z > z_lim or self.z < 0:
-            
-            """print("Photon "+str(self.ref)+" : escaped")"""
+
             return False
             
         return True
@@ -398,23 +428,16 @@ class photon:
                     nbr_comp += 1
                 else:
                     nbr_ray += 1
-                """print("L = "+str(L))"""
                 
                 if not_absorbed :
                     
                     tau = -np.log(1 - rd.random())
-        """
-        print("\n")
-        # Print ratio of originate and last value of wavelength
-        print("Photon "+str(self.ref)+" : lambda_0/last_lambda : "+str(self.wl/starting_wl))
-        print("\n")
-        """
+
         row_photon = [self.ref, nbr_interactions, nbr_comp, nbr_ray, is_abs, '{:.2f}'.format(av_L/nbr_interactions), starting_wl, int(self.wl)]
         return [pos_photon, pos_scat, tele_map, row_photon]
     
         
-#%% main
-
+#%% Creating medium and objects
 
 # Create table for cartesian geometry
 Cells = [[[n/(nc**2*6+nc*16+8) for k in range(nc+2)] for j in range(nc+2)] for i in range(nc+2)]
@@ -424,48 +447,60 @@ rand_dens(Cells)
 # Create table for spherical geometry
 Layers = spherical_density(nc)
 
-     
+   
 # Create photon objects, starting from a point source in the middle of the medium
 
 photons=[photon(x_lim/2, y_lim/2, z_lim/2, rd.randint(400,801), i+1) for i in range(nbr_photon)]
 
-# Retrieve coordonates of photons
-"""
-print("Choose a geometry between cubic or spherical :")
-print("For cubic, enter : cell")
-print("For spherical, enter : layer")
-geo = input()
-"""
-geo = "cell"
-#geo = "layer"
-to_plot=[x.coord(geo, 0.01, 0.5, nc, nl, Cells, Layers) for x in photons]
+
+#%% Retrieve coordonates of photons
+
+to_plot=[x.coord(str(geo), P_abs, P_comp, nc, nl, Cells, Layers) for x in photons]
 
 pos = [to_plot[i][0] for i in range(len(to_plot))]
 scat = [to_plot[i][1] for i in range(len(to_plot))]
 tele_maps = [to_plot[i][2] for i in range(len(to_plot))]
 all_rows = [to_plot[i][3] for i in range(len(to_plot))]
-photon_table.add_rows(all_rows)
-photon_table.title = "Density : "+ str(int(np.ceil(n)))+", geometry : "+ str(geo)
+
+
+#%% Plotting maps and showing table that sums up experiment
+
 
 # Plot photons paths and map of the telescope           
 plot_all(pos, scat, tele_maps)
 
+# Create images with sum up of simulation
 
+photon_table.add_rows(all_rows)
+photon_table.title = "Density : "+ str(int(np.ceil(n)))+", geometry : "+ str(geo)
 im = Image.new("RGB", (550, 255), "white")
 draw = ImageDraw.Draw(im)
 draw.text((10, 10), str(photon_table), fill="black")
 im.show()
 
 
-# Destroy objects
+AV=average_quantities(all_rows)
+av_table.add_row(AV)
+im_av = Image.new("RGB", (550, 255), "white")
+draw = ImageDraw.Draw(im_av)
+draw.text((10, 10), str(av_table), fill="black")
+im_av.show()
+
+# Print sum up of simulation in terminal
+print("\n")
+print(photon_table)
+
+print("\n")
+print(av_table)
+
+
+#%% Destroy objects
+
 print("Destroyers called")
 print("\n")
 for x in photons:
     del x
 gc.collect()
-
-print("\n")
-print(photon_table)
 
 
 
