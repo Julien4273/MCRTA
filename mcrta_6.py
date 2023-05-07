@@ -6,6 +6,8 @@ Created on Tue Apr  4 10:51:46 2023
 @author: julien
 """
 
+#%% Packages
+
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
@@ -17,17 +19,13 @@ import gc
 #%% Parameters user can change
 
 nbr_photon = 10
-P_abs = 0.01
+P_abs = 0.06
 P_comp = 0.5
 
 geo = "cell"
 #geo = "layer"
 
-#n= 10**6       # Default density
-
-
-
-#%% Global variables and necessary functions
+#%% Global variables and helper functions
 
 markers = ["." , "," , "o" , "v" , "^" , "<", ">", "*"]
 colors = ['r','g','b','c','m', 'y', 'k', 'o']
@@ -291,15 +289,18 @@ class photon:
         
         # Random probability
         rdn = rd.random()
-        """
+        
+        pabs, pcomp = p_abs, p_comp 
+        
         if 700<self.wl<800:
-            p_abs += 0.2
-        """
-        if (rdn <= p_abs):
+            pabs += 0.2
+            pcomp -= 0.2
+
+        if (rdn <= pabs):
             
             return False, 0
         
-        elif (rdn <= p_comp) :
+        elif (rdn <= pcomp) :
             
             wl_0 = self.wl
             
@@ -459,6 +460,8 @@ Layers = spherical_density(nc)
    
 # Create photon objects, starting from a point source in the middle of the medium
 
+#WL = [751, 798, 737, 764, 702, 666, 420, 579, 473, 639]
+
 photons=[photon(x_lim/2, y_lim/2, z_lim/2, rd.randint(400,801), i+1) for i in range(nbr_photon)]
 
 
@@ -482,9 +485,10 @@ plot_all(pos, scat, tele_maps)
 
 photon_table.add_rows(all_rows)
 photon_table.title = "Density : "+ str(int(np.ceil(n)))+", geometry : "+ str(geo)
-im = Image.new("RGB", (550, 255), "white")
+im = Image.new("RGB", (550, int(255/(33)*(2*nbr_photon+13))), "white")
 draw = ImageDraw.Draw(im)
 draw.text((10, 10), str(photon_table), fill="black")
+
 im.save("photon_table_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
 im.show()
 
