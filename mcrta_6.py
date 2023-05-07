@@ -37,8 +37,8 @@ x_lim, y_lim, z_lim = 5, 5, 5
 dx, dy, dz = 0.01, 0.01, 0.01     # Steps
 
 r_0 = 10**-3                    # Radius of scaterers
-#n = (10**5*r_0)**-3             # Low density
-n = (10**2*r_0)**-3            # Medium density
+#n = (10**5*r_0)**-3           # Low density
+n = (10**2*r_0)**-3           # Medium density
 #n = (2*r_0)**-3                # High density
 
 sig = 4 * np.pi * r_0           # Cross section
@@ -54,7 +54,7 @@ photon_table = PrettyTable(field_names_0)
 
 field_names_av = ["av interactions", "av Compton", "av Rayleigh", "Absorbed", "av dist trav"]
 av_table = PrettyTable(field_names_av)
-av_table.title = "Sum up"
+av_table.title = "Number of photons : "+str(nbr_photon)
 
 
 # Helper functions
@@ -201,8 +201,12 @@ def plot_rt(positions : list, scatt : list ):
     ax.set_zlabel("z axis")
 
     fig.suptitle("Radiative transfer")
-    fig.savefig("Radiative_transfer")
-    rt_plot = Image.open("Radiative_transfer.png")
+    fig.savefig("Radiative_transfer_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
+    rt_plot = Image.open("Radiative_transfer_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
+    w,h = rt_plot.size
+    print(h,w)
+    rt_plot = rt_plot.crop((230,0,w-180,h-30))
+    rt_plot.save("Radiative_transfer_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
     rt_plot.show()
 
     
@@ -221,8 +225,8 @@ def plot_tele(tm : list):
     ax_maps.set_ylabel("z axis")
 
     fig_maps.suptitle("Telescope")
-    fig_maps.savefig("Telescope")
-    tele_plot = Image.open("Telescope.png")
+    fig_maps.savefig("Telescope_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
+    tele_plot = Image.open("Telescope_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
     tele_plot.show()   
 
 def plot_all(positions : list, scatt : list, tm : list):
@@ -287,7 +291,10 @@ class photon:
         
         # Random probability
         rdn = rd.random()
-        
+        """
+        if 700<self.wl<800:
+            p_abs += 0.2
+        """
         if (rdn <= p_abs):
             
             return False, 0
@@ -297,7 +304,9 @@ class photon:
             wl_0 = self.wl
             
             # Calculate new wavelength
-            self.wl = wl_0 * (1 + 1/wl_0 * (1-rd.random())) 
+            #self.wl = wl_0 * (1 + 1/wl_0 * (1-rd.random()))
+            self.wl = wl_0 + 1 - rd.random()
+            
             
             # New direction
             self.ndx = np.sin(theta) * np.cos(phi) * dx
@@ -476,14 +485,16 @@ photon_table.title = "Density : "+ str(int(np.ceil(n)))+", geometry : "+ str(geo
 im = Image.new("RGB", (550, 255), "white")
 draw = ImageDraw.Draw(im)
 draw.text((10, 10), str(photon_table), fill="black")
+im.save("photon_table_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
 im.show()
 
 
 AV=average_quantities(all_rows)
 av_table.add_row(AV)
-im_av = Image.new("RGB", (550, 255), "white")
+im_av = Image.new("RGB", (450, 120), "white")
 draw = ImageDraw.Draw(im_av)
 draw.text((10, 10), str(av_table), fill="black")
+im_av.save("av_table_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
 im_av.show()
 
 # Print sum up of simulation in terminal
