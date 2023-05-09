@@ -84,12 +84,35 @@ ax3d_2.set_zlabel("z axis")
 
 
 
+A11 = [z1 for z1 in Z if z1>1/2]
+A12 = [z1 for z1 in Z if 0<z1<1/2]
+A13 = [z1 for z1 in Z if -1/2<z1<0]
+A14 = [z1 for z1 in Z if z1<-1/2]
+    
+        
+A21 = [z2 for z2 in Z2 if z2>1/2]
+A22 = [z2 for z2 in Z2 if 0<z2<1/2]
+A23 = [z2 for z2 in Z2 if -1/2<z2<0]
+A24 = [z2 for z2 in Z2 if z2<-1/2]
 
 
+NBR11 = len(A11) /len(Z)
+NBR12 = len(A12) /len(Z)
+NBR13 = len(A13) /len(Z)
+NBR14 = len(A14) /len(Z)
+
+NBR21 = len(A21) /len(Z2)
+NBR22 = len(A22) /len(Z2)
+NBR23 = len(A23) /len(Z2)
+NBR24 = len(A24) /len(Z2)
 
 
-
-
-
-
-
+print(NBR11)
+print(NBR12)
+print(NBR13)
+print(NBR14)
+print("\n")
+print(NBR21)
+print(NBR22)
+print(NBR23)
+print(NBR24)

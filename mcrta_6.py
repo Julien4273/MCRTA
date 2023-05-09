@@ -202,7 +202,6 @@ def plot_rt(positions : list, scatt : list ):
     fig.savefig("Radiative_transfer_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
     rt_plot = Image.open("Radiative_transfer_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
     w,h = rt_plot.size
-    print(h,w)
     rt_plot = rt_plot.crop((230,0,w-180,h-30))
     rt_plot.save("Radiative_transfer_density_"+str(int(np.ceil(n)))+"_proba_"+str(P_abs)+"_"+str(P_comp)+"_geo_"+str(geo)+".png")
     rt_plot.show()
